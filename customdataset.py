@@ -39,10 +39,11 @@ class TextCleaner:
     def __call__(self, text):
         indexes = []
         for char in text:
-            try:
-                indexes.append(self.word_index_dictionary[char])
-            except KeyError:
-                print(text)
+            if char != '\n':
+                try:
+                    indexes.append(self.word_index_dictionary[char])
+                except KeyError:
+                    print(f'keyerror: "{char}"')
         return indexes
 
 np.random.seed(1)
@@ -109,9 +110,7 @@ class FilePathDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):        
         wave, text_tensor, spk, wav_path = self._load_tensor(idx)
-        
         mel_tensor = preprocess(wave).squeeze()
-        
         acoustic_feature = mel_tensor.squeeze()
         length_feature = acoustic_feature.size(1)
         acoustic_feature = acoustic_feature[:, :(length_feature - length_feature % 2)]
@@ -139,7 +138,7 @@ class FilePathDataset(torch.utils.data.Dataset):
 
     def _load_tensor(self, idx):
         wav_path = self.data_list.iloc[idx]['audio_path']
-        text = self.data_list.iloc[idx]['text']
+        text = self.data_list.iloc[idx]['text'].replace('\n', ' ')
         spk = self.data_list.iloc[idx]['spk']
         wave, _ = librosa.load(wav_path, mono=True, sr=24000, dtype=np.float64)
         wave = np.concatenate([np.zeros([5000]), wave, np.zeros([5000])], axis=0)
